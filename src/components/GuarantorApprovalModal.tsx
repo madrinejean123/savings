@@ -22,12 +22,10 @@ export default function GuarantorApprovalModal({
   if (!loan?.id || !member?.id) return null;
 
   // 🔧 status MUST match DB check constraint
-  const handleDecision = async (status: 'pending' | 'declined') => {
+  const handleDecision = async (status: 'accepted' | 'declined') => {
     try {
       setError('');
-      status === 'pending'
-        ? setLoadingAccept(true)
-        : setLoadingDecline(true);
+      status === 'accepted' ? setLoadingAccept(true) : setLoadingDecline(true);
 
       const guarantorAmount =
         loan.guarantors?.find((g) => g.member_id === member.id)
@@ -54,7 +52,7 @@ export default function GuarantorApprovalModal({
         type: 'guarantor_response',
         title: 'Guarantor Response',
         message:
-          status === 'pending'
+          status === 'accepted'
             ? `${member.full_name} accepted your loan guarantee.`
             : `${member.full_name} declined your loan guarantee.`,
         metadata: JSON.stringify({
@@ -74,15 +72,16 @@ export default function GuarantorApprovalModal({
 
       if (fetchError) throw fetchError;
 
-      const validGuarantors =
-        allGuarantors?.filter((g) => g.amount_guaranteed > 0) || [];
+      const validGuarantors = allGuarantors?.filter((g) => g.amount_guaranteed > 0) || [];
 
-      const allAccepted =
-        validGuarantors.length > 0 &&
-        validGuarantors.every((g) => g.status === 'pending');
+      // We consider a guarantor 'accepted' when their status === 'accepted'
+      const allAccepted = validGuarantors.length > 0 && validGuarantors.every((g) => g.status === 'accepted');
 
       // 🔔 Notify admin when all guarantors accepted
       if (allAccepted) {
+        // NOTE: applications often model admin-targeted notifications differently.
+        // Existing code uses `member_id: null` for admin-targeted notifications —
+        // keep the same behavior but ensure the Notification type accepts null (updated in types).
         await supabase.from('notifications').insert({
           member_id: null,
           type: 'loan_ready_for_admin',
@@ -131,7 +130,7 @@ export default function GuarantorApprovalModal({
 
         <div className="flex gap-3">
           <button
-            onClick={() => handleDecision('pending')}
+            onClick={() => handleDecision('accepted')}
             disabled={loadingAccept || loadingDecline}
             className="flex-1 py-2 bg-green-500 text-white font-medium rounded-xl disabled:opacity-50"
           >

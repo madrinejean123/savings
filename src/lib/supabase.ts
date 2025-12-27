@@ -20,6 +20,7 @@ export type Member = {
   id: string;
   profile_id: string;
   member_number: string;
+  full_name?: string;
   address: string | null;
   date_of_birth: string | null;
   account_balance: number;
@@ -67,6 +68,12 @@ export type Loan = {
   outstanding_balance: number | null;
   created_at: string;
   updated_at: string;
+  // Optional field present when queries join guarantor data (loans_with_guarantors view)
+  guarantors?: Array<{
+    member_id: string;
+    amount_guaranteed: number;
+    status: string;
+  }>;
 };
 
 export type LoanRepayment = {
@@ -81,10 +88,12 @@ export type LoanRepayment = {
 
 export type Notification = {
   id: string;
-  member_id: string;
+  member_id: string | null;
   type: string;
   title: string;
   message: string;
   read: boolean;
   sent_at: string;
+  metadata?: string;
+  recipient_role?: string;
 };
